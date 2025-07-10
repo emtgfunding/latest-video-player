@@ -18,45 +18,55 @@
   >
     <source
       id="source"
-      src="https://shotstack-api-v1-output.s3-ap-southeast-2.amazonaws.com/htkh67dmtu/f47f4c08-0e77-4fad-9156-b5d2b2e69952.mp4"
+      src="YOUR_VIDEO_URL_HERE.mp4"
       type="video/mp4"
     >
     Your browser doesn’t support HTML5 video.
   </video>
 
   <script>
-    // 1) Autoplay muted then unmute after 1s
+    const player = document.getElementById('player');
+    const source = document.getElementById('source');
+    let currentSrc = source.src;
+
+    // 1) On load: play muted, then unmute after 1s
     window.addEventListener('load', () => {
-      const v = document.getElementById('player');
-      v.play().catch(()=>{});
+      player.play().catch(()=>{ /* ignored */ });
       setTimeout(() => {
-        v.muted = false;
-        v.volume = 1.0;
-        v.play().catch(()=>{});
+        player.muted = false;
+        player.volume = 1.0;
+        player.play().catch(()=>{ /* ignored */ });
       }, 1000);
     });
 
-    // 2) Watch for changes in the <source> src attribute on the server
-    let currentSrc = document.getElementById('source').getAttribute('src');
-
-    async function checkForNewSource() {
+    // 2) Poll for a new <source> URL on the server
+    async function checkForNewVideo() {
       try {
-        // Fetch the raw HTML of this page (avoiding cache)
-        const res = await fetch(window.location.pathname + '?_=' + Date.now(), { cache: 'no-store' });
-        const text = await res.text();
-        // Extract the first occurrence of src="...mp4"
-        const match = text.match(/<source\s+[^>]*id="source"[^>]*src="([^"]+)"/i);
-        if (match && match[1] !== currentSrc) {
-          location.reload();
+        // fetch your index.html to get the updated src attribute
+        const res = await fetch(window.location.pathname + '?_='+Date.now(), { cache:'no-store' });
+        const html = await res.text();
+        const m = html.match(/<source\s+id=["']source["'][^>]*src=["']([^"']+)["']/i);
+        if (m && m[1] !== currentSrc) {
+          currentSrc = m[1];
+          // swap in the new URL without reloading
+          source.src = currentSrc;
+          player.load();
+          player.play().catch(()=>{ /* ignored */ });
+          // re-unmute after 1s on the new video
+          setTimeout(() => {
+            player.muted = false;
+            player.volume = 1.0;
+            player.play().catch(()=>{ /* ignored */ });
+          }, 1000);
         }
-      } catch (e) {
-        console.error('Error checking for new source:', e);
+      } catch (err) {
+        console.error('Error checking for new video:', err);
       }
     }
 
-    // Check first after 5s, then every 10s
-    setTimeout(checkForNewSource, 5000);
-    setInterval(checkForNewSource, 10000);
+    // start polling after a short delay
+    setTimeout(checkForNewVideo, 5000);
+    setInterval(checkForNewVideo, 10000);
   </script>
 </body>
 </html>
