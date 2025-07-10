@@ -1,83 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Latest Video</title>
+  <meta charset="UTF-8">
+  <title>Delayed Autoplay with Sound</title>
   <style>
-    body, html { margin:0; height:100%; background:#000; }
-    video { width:100%; height:100%; object-fit:contain; }
+    body, html {
+      margin: 0;
+      height: 100%;
+      background: #000;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
   </style>
 </head>
 <body>
   <video
     id="player"
-    autoplay
-    muted
-    playsinline
-    controls
+    controls      <!-- start paused with controls visible -->
   >
     <source
-      id="source"
-      src="https://shotstack-api-v1-output.s3-ap-southeast-2.amazonaws.com/htkh67dmtu/f47f4c08-0e77-4fad-9156-b5d2b2e69952.mp4"
+      src="https://raw.githubusercontent.com/emtgfunding/latest-video-player/main/loancelly.mp4"
       type="video/mp4"
     >
     Your browser doesn’t support HTML5 video.
   </video>
 
   <script>
-    const player = document.getElementById('player');
-    const source  = document.getElementById('source');
-    let currentSrc = source.src;
+    window.addEventListener('load', () => {
+      const v = document.getElementById('player');
+      v.muted   = false;     // ensure sound is on
+      v.volume  = 1.0;       // full volume
 
-    // 1) On load: play muted, then unmute & replay
-    window.addEventListener('load', async () => {
-      try {
-        await player.play(); // start muted autoplay
-      } catch(_) {}
-      
-      setTimeout(async () => {
-        player.muted = false;      // turn sound on
-        player.volume = 1.0;
-        try {
-          await player.play();     // re-trigger play with sound
-        } catch(_) {
-          console.warn('Browser blocked unmuted playback.');
-        }
+      // start playback after 1 second
+      setTimeout(() => {
+        v.play().catch(err => {
+          console.warn('Autoplay failed:', err);
+        });
       }, 1000);
     });
-
-    // 2) Poll for new video URL (in the <source> tag on the server)
-    async function checkForNewVideo() {
-      try {
-        const res  = await fetch(window.location.pathname + '?_='+Date.now(), { cache:'no-store' });
-        const html = await res.text();
-        const m    = html.match(/<source[^>]*id=["']source["'][^>]*src=["']([^"']+)["']/i);
-        if (m && m[1] !== currentSrc) {
-          currentSrc = m[1];
-          source.src  = currentSrc;
-          player.load();         // load new src
-          try {
-            await player.play(); // start muted playback of new video
-          } catch(_) {}
-          // then unmute after 1s
-          setTimeout(async () => {
-            player.muted = false;
-            player.volume = 1.0;
-            try {
-              await player.play(); 
-            } catch(_) {
-              console.warn('Browser blocked unmuted playback.');
-            }
-          }, 1000);
-        }
-      } catch(err) {
-        console.error(err);
-      }
-    }
-
-    // schedule polling
-    setTimeout(checkForNewVideo, 5000);
-    setInterval(checkForNewVideo, 10000);
   </script>
 </body>
 </html>
+
