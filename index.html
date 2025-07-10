@@ -1,29 +1,55 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Latest Video</title>
   <style>
-    body,html { margin:0; height:100%; background:#000; }
-    video { width:100%; height:100%; object-fit:contain; }
+    body, html {
+      margin: 0;
+      height: 100%;
+      background: #000;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #000;
+    }
   </style>
 </head>
 <body>
-  <video id="player" autoplay playsinline controls>
-    <source src="https://shotstack-api-v1-output.s3-ap-southeast-2.amazonaws.com/htkh67dmtu/f47f4c08-0e77-4fad-9156-b5d2b2e69952.mp4" type="video/mp4">
+  <video
+    id="player"
+    autoplay
+    muted       <!-- start muted so browsers allow autoplay -->
+    playsinline
+    controls
+  >
+    <source
+      src="YOUR_VIDEO_URL_HERE.mp4"
+      type="video/mp4"
+    >
     Your browser doesn’t support HTML5 video.
   </video>
 
   <script>
-    // Ensure unmuted playback
-    const player = document.getElementById('player');
-    player.muted = false;
-    player.volume = 1.0;
-    player.play().catch(() => {
-      console.warn('Autoplay with sound may be blocked by the browser. User interaction may be required.');
+    window.addEventListener('load', () => {
+      const v = document.getElementById('player');
+
+      // 1) Kick off playback (muted)
+      v.play().catch(() => {
+        console.warn('Muted autoplay failed—video may require user gesture.');
+      });
+
+      // 2) After 1 second, unmute and ensure it’s still playing
+      setTimeout(() => {
+        v.muted = false;    // turn sound back on
+        v.volume = 1.0;     // full volume
+        v.play().catch(() => {
+          console.warn('Unmuted play was blocked—user interaction may be required.');
+        });
+      }, 1000);
     });
   </script>
 </body>
 </html>
-
