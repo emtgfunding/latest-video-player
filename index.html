@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Latest Video</title>
   <style>
     body, html { margin:0; height:100%; background:#000; }
@@ -18,7 +18,7 @@
   >
     <source
       id="source"
-      src="https://shotstack-api-v1-output.s3-ap-southeast-2.amazonaws.com/htkh67dmtu/f47f4c08-0e77-4fad-9156-b5d2b2e69952.mp4"
+      src="YOUR_VIDEO_URL_HERE.mp4"
       type="video/mp4"
     >
     Your browser doesn’t support HTML5 video.
@@ -26,45 +26,56 @@
 
   <script>
     const player = document.getElementById('player');
-    const source = document.getElementById('source');
+    const source  = document.getElementById('source');
     let currentSrc = source.src;
 
-    // 1) On load: play muted, then unmute after 1s
-    window.addEventListener('load', () => {
-      player.play().catch(()=>{ /* ignored */ });
-      setTimeout(() => {
-        player.muted = false;
+    // 1) On load: play muted, then unmute & replay
+    window.addEventListener('load', async () => {
+      try {
+        await player.play(); // start muted autoplay
+      } catch(_) {}
+      
+      setTimeout(async () => {
+        player.muted = false;      // turn sound on
         player.volume = 1.0;
-        player.play().catch(()=>{ /* ignored */ });
+        try {
+          await player.play();     // re-trigger play with sound
+        } catch(_) {
+          console.warn('Browser blocked unmuted playback.');
+        }
       }, 1000);
     });
 
-    // 2) Poll for a new <source> URL on the server
+    // 2) Poll for new video URL (in the <source> tag on the server)
     async function checkForNewVideo() {
       try {
-        // fetch your index.html to get the updated src attribute
-        const res = await fetch(window.location.pathname + '?_='+Date.now(), { cache:'no-store' });
+        const res  = await fetch(window.location.pathname + '?_='+Date.now(), { cache:'no-store' });
         const html = await res.text();
-        const m = html.match(/<source\s+id=["']source["'][^>]*src=["']([^"']+)["']/i);
+        const m    = html.match(/<source[^>]*id=["']source["'][^>]*src=["']([^"']+)["']/i);
         if (m && m[1] !== currentSrc) {
           currentSrc = m[1];
-          // swap in the new URL without reloading
-          source.src = currentSrc;
-          player.load();
-          player.play().catch(()=>{ /* ignored */ });
-          // re-unmute after 1s on the new video
-          setTimeout(() => {
+          source.src  = currentSrc;
+          player.load();         // load new src
+          try {
+            await player.play(); // start muted playback of new video
+          } catch(_) {}
+          // then unmute after 1s
+          setTimeout(async () => {
             player.muted = false;
             player.volume = 1.0;
-            player.play().catch(()=>{ /* ignored */ });
+            try {
+              await player.play(); 
+            } catch(_) {
+              console.warn('Browser blocked unmuted playback.');
+            }
           }, 1000);
         }
-      } catch (err) {
-        console.error('Error checking for new video:', err);
+      } catch(err) {
+        console.error(err);
       }
     }
 
-    // start polling after a short delay
+    // schedule polling
     setTimeout(checkForNewVideo, 5000);
     setInterval(checkForNewVideo, 10000);
   </script>
