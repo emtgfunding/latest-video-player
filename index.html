@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Latest Video</title>
+  <style>
+    body { display:flex; justify-content:center; align-items:center; height:100vh; margin:0; background:#000 }
+    video { max-width:90vw; max-height:90vh; }
+  </style>
+</head>
+<body>
+  <video id="player" controls autoplay loop muted>
+    <source id="source" src="" type="video/mp4">
+    Your browser doesn’t support HTML5 video.
+  </video>
+
+  <script>
+    async function refreshVideo() {
+      try {
+        const res = await fetch('latest.json', {cache: "no-store"});
+        const { url } = await res.json();
+        const src = document.getElementById('source');
+        if (src.src !== url) {
+          src.src = url;
+          document.getElementById('player').load();
+        }
+      } catch(e) { console.error(e) }
+    }
+    // fetch immediately, then every 30s
+    refreshVideo();
+    setInterval(refreshVideo, 30000);
+  </script>
+</body>
+</html>
