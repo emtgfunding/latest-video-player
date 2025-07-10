@@ -2,45 +2,58 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Delayed Autoplay with Sound</title>
+  <title>Delayed Autoplay &amp; Auto-Refresh</title>
   <style>
-    body, html {
-      margin: 0;
-      height: 100%;
-      background: #000;
-    }
-    video {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-    }
+    body, html { margin:0; height:100%; background:#000; }
+    video { width:100%; height:100%; object-fit:contain; }
   </style>
 </head>
 <body>
   <video
     id="player"
-    controls      <!-- start paused with controls visible -->
+    controls            <!-- start paused with controls visible -->
+    playsinline
   >
     <source
-      src="https://shotstack-api-v1-output.s3-ap-southeast-2.amazonaws.com/htkh67dmtu/cfec4d1d-af9c-4dea-9700-f124415a592a.mp4"
+      id="source"
+      src="https://raw.githubusercontent.com/emtgfunding/latest-video-player/main/loancelly.mp4"
       type="video/mp4"
     >
     Your browser doesn’t support HTML5 video.
   </video>
 
   <script>
-    window.addEventListener('load', () => {
-      const v = document.getElementById('player');
-      v.muted   = false;     // ensure sound is on
-      v.volume  = 1.0;       // full volume
+    const player   = document.getElementById('player');
+    const sourceEl = document.getElementById('source');
+    let currentSrc = sourceEl.getAttribute('src');
 
-      // start playback after 1 second
+    // 1) After 1 second, attempt to autoplay (with sound)
+    window.addEventListener('load', () => {
       setTimeout(() => {
-        v.play().catch(err => {
-          console.warn('Autoplay failed:', err);
+        player.play().catch(err => {
+          console.warn('Autoplay blocked:', err);
         });
       }, 1000);
     });
+
+    // 2) Every 10 s, re-fetch this HTML to check <source> src
+    async function checkForNewSource() {
+      try {
+        // cache-bust by appending timestamp
+        const res  = await fetch(window.location.pathname + '?_=' + Date.now(), { cache: 'no-store' });
+        const html = await res.text();
+        // pull out the src attribute from <source id="source">
+        const m    = html.match(/<source\s+id=["']source["'][^>]*src=["']([^"']+)["']/i);
+        if (m && m[1] !== currentSrc) {
+          // url changed on the server → reload the page
+          window.location.reload();
+        }
+      } catch (e) {
+        console.error('Error checking for new video source:', e);
+      }
+    }
+
+    setInterval(checkForNewSource, 10000);
   </script>
 </body>
 </html>
